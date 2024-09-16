@@ -15,14 +15,13 @@ The script is using simple logic based on the geometric properties of the region
 1. Check aspect ratio. If the width of the page is bigger than the height, a bookfold is approximated by deviding the width by 2. If not, the bookfold is set to 0 for a single page layout.
 2. Assign all regions that have their centre left of the bookfold 0 for the left page, all right of the bookfold 1 for the right page.
 3. Order the regions by their page side first (left before right), then for each side top to bottom and left to right
-4. iterate over all regions and compare each box with its immediate following one:
-     - if the two consecutive boxes are both on the left page, OR if two consecutive boxes are both on the right page:
+4. iterate over all regions following the current reading order and compare each box with its immediate following one UNTIL not one swap occurs:
+     - if the two consecutive boxes are both on the same page:
         - if box 2's lowest coordinate is higher than that of box 1, and its highest lower than that of box 1:
-          - swap their ranks if box 2 (x_min) is left of box 1 (x_min)
-          - swap their ranks if box 2 (x_max) is right of box 1 (x_max)
+          - swap their ranks if box 2 (x_min) is left of box 1 (x_min) OR box 2 (x_max) is right of box 1 (x_max), update current reading order and restart loop
      - keep their initial reading order rank if otherwise
 
-The script then updates the reading order attributes within the XML structure, reflecting the new reading order. You can choose if you wish to overwrite the prior xml file, or save it as a new one.
+5. Once a loop runs through with no swaps, the script takes the final reading order and updates the reading order attributes within the XML structure, reflecting the new reading order. You can choose if you wish to overwrite the prior xml file, or save it as a new one.
 
 ## Requirements
 

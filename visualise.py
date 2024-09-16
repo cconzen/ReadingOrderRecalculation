@@ -3,7 +3,7 @@ import os
 from typing import List, Tuple, Dict
 import xml.etree.ElementTree as ET
 from PIL import Image, ImageDraw, ImageFont
-
+import argparse 
 
 def parse_points(points_str: str) -> Tuple[int, int, int, int]:
     """Parse the points from the 'Coords' element and return x_min, x_max, y_min, y_max."""
@@ -135,7 +135,9 @@ def process_dir(base_folder: str) -> None:
 
 
 if __name__ == "__main__":
+    
+    parser = argparse.ArgumentParser(description='Visualise the processed XML files.')
+    parser.add_argument('directory', type=str, help='Path to the base directory containing the IMG files, and the page directory with the XML files.')
+    args = parser.parse_args()
 
-    base_folder = 'example_folder'  # replace with your base folder path
-
-    process_dir(base_folder)
+    process_dir(args.directory)

@@ -40,53 +40,56 @@ def extract_features_from_xml(xml_file: str) -> pd.DataFrame:
 
     reading_order = {}
     ordered_group = root.find('.//ns:ReadingOrder/ns:OrderedGroup', ns)
-    for region_ref in ordered_group.findall('ns:RegionRefIndexed', ns):
-        region_id = region_ref.attrib['regionRef']
-        index = int(region_ref.attrib['index'])
-        reading_order[region_id] = index
+    if ordered_group:
+        for region_ref in ordered_group.findall('ns:RegionRefIndexed', ns):
+            region_id = region_ref.attrib['regionRef']
+            index = int(region_ref.attrib['index'])
+            reading_order[region_id] = index
 
-    text_regions = root.findall('.//ns:TextRegion', ns)
-    if not text_regions:
+        text_regions = root.findall('.//ns:TextRegion', ns)
+        if not text_regions:
+            return None
+
+        for region in text_regions:
+            region_id = region.attrib['id']
+            coords = region.find('ns:Coords', ns).attrib['points']
+            custom_str = region.attrib.get('custom', '')
+
+            match = re.search(r'structure\s*{[^}]*type:([^;]+);', custom_str)
+            structure_type = match.group(1) if match else "Unknown"
+
+            points = [list(map(int, point.split(','))) for point in coords.split()]
+            x_min = min(p[0] for p in points)
+            y_min = min(p[1] for p in points)
+            x_max = max(p[0] for p in points)
+            y_max = max(p[1] for p in points)
+
+            width = x_max - x_min
+            height = y_max - y_min
+            aspect_ratio = width / height
+
+            avg_x = np.mean([point[0] for point in points])
+            page_side = 0 if avg_x < bookfold_centre else 1  
+
+            index = reading_order.get(region_id, -1)  # default to -1 if not found
+
+            regions.append({
+                'id': region_id,
+                'x_min': x_min, # left most coordinate
+                'x_max': x_max, # right most coordinate
+                'y_min': y_min, # highest coordinate
+                'y_max': y_max, # lowest coordinate
+                'width': width,
+                'height': height,
+                'page_side': page_side, # 0 = left side, 1 = right side
+                'aspect_ratio': aspect_ratio,
+                'structure_type': structure_type,
+                'index': index # initial reading order index
+            })
+
+        return pd.DataFrame(regions)
+    else:
         return None
-
-    for region in text_regions:
-        region_id = region.attrib['id']
-        coords = region.find('ns:Coords', ns).attrib['points']
-        custom_str = region.attrib.get('custom', '')
-
-        match = re.search(r'structure\s*{[^}]*type:([^;]+);', custom_str)
-        structure_type = match.group(1) if match else "Unknown"
-
-        points = [list(map(int, point.split(','))) for point in coords.split()]
-        x_min = min(p[0] for p in points)
-        y_min = min(p[1] for p in points)
-        x_max = max(p[0] for p in points)
-        y_max = max(p[1] for p in points)
-
-        width = x_max - x_min
-        height = y_max - y_min
-        aspect_ratio = width / height
-
-        avg_x = np.mean([point[0] for point in points])
-        page_side = 0 if avg_x < bookfold_centre else 1  
-
-        index = reading_order.get(region_id, -1)  # default to -1 if not found
-
-        regions.append({
-            'id': region_id,
-            'x_min': x_min, # left most coordinate
-            'x_max': x_max, # right most coordinate
-            'y_min': y_min, # highest coordinate
-            'y_max': y_max, # lowest coordinate
-            'width': width,
-            'height': height,
-            'page_side': page_side, # 0 = left side, 1 = right side
-            'aspect_ratio': aspect_ratio,
-            'structure_type': structure_type,
-            'index': index # initial reading order index
-        })
-
-    return pd.DataFrame(regions)
 
 def update_reading_order_in_xml(xml_file: str, updated_df: pd.DataFrame, overwrite: bool) -> None:
     """
@@ -186,24 +189,33 @@ def batch_inference_rules(directory: str, overwrite: bool = False) -> None:
             print(f"No text regions found in {xml_file}. Skipping...")
             continue
 
-        # Sort regions by page side first, then top to bottom, and then left to right
+        # sort regions by page side first, then top to bottom, and then left to right
         features_df = features_df.sort_values(by=['page_side', 'y_min', 'x_min']).reset_index(drop=True)
 
         # initialise sequential order starting with 0
         features_df['sequential_order'] = 0
-
+        features_df['swapped'] = False
         # iterate over regions and compare each box with its immediate following one
         for i in range(len(features_df) - 1):
             current_box = features_df.iloc[i]
             next_box = features_df.iloc[i + 1]
 
-            # all boxes on the left side
+            if current_box['swapped'] or next_box['swapped']:
+                continue
+
+            # all boxes on the right side
             if current_box['page_side'] == next_box['page_side'] == 0:
-                # 10 px tolerance space for slightly overlapping marginalia, maybe adjust
-                if next_box['x_max'] + 10 >= current_box['x_min'] and next_box['y_max'] <= current_box['y_max']:
-                    # swap order of the boxes
-                    features_df.at[i, 'sequential_order'] = i + 1
-                    features_df.at[i + 1, 'sequential_order'] = i
+                if next_box['y_max'] <= current_box['y_max'] and next_box['y_min'] >= current_box['y_min']:
+                    if next_box['x_min'] > current_box['x_min'] or next_box['x_max'] < current_box['x_max']:
+                        # swap order of the boxes
+                        features_df.at[i, 'sequential_order'] = i + 1
+                        features_df.at[i + 1, 'sequential_order'] = i
+                        features_df.at[i, 'swapped'] = True
+                        features_df.at[i + 1, 'swapped'] = True
+                    else:
+                        # keep as is
+                        features_df.at[i, 'sequential_order'] = i
+                        features_df.at[i + 1, 'sequential_order'] = i + 1
                 else:
                     # keep as is
                     features_df.at[i, 'sequential_order'] = i
@@ -211,19 +223,29 @@ def batch_inference_rules(directory: str, overwrite: bool = False) -> None:
 
             # all boxes on the left side
             elif current_box['page_side'] == next_box['page_side'] == 1:
-                # 10 px tolerance space for slightly overlapping marginalia, maybe adjust
-                if next_box['x_max'] - 10  <= current_box['x_min'] and next_box['y_max'] <= current_box['y_max']:
-                    # swap order of the boxes
-                    features_df.at[i, 'sequential_order'] = i + 1
-                    features_df.at[i + 1, 'sequential_order'] = i
+                if next_box['y_max'] <= current_box['y_max'] and next_box['y_min'] >= current_box['y_min']:
+                    if next_box['x_min'] > current_box['x_min'] or next_box['x_max'] < current_box['x_max']:
+                        # swap order of the boxes
+                        features_df.at[i, 'sequential_order'] = i + 1
+                        features_df.at[i + 1, 'sequential_order'] = i
+                        features_df.at[i, 'swapped'] = True
+                        features_df.at[i + 1, 'swapped'] = True
+                    else:
+                        # Keep as is
+                        features_df.at[i, 'sequential_order'] = i
+                        features_df.at[i + 1, 'sequential_order'] = i + 1
                 else:
-                    # Keep as is
+                    # keep as is
                     features_df.at[i, 'sequential_order'] = i
                     features_df.at[i + 1, 'sequential_order'] = i + 1
             else:
                 features_df.at[i, 'sequential_order'] = i
                 features_df.at[i + 1, 'sequential_order'] = i + 1
-        # debug
+
+        for i in range(len(features_df)):
+            if not features_df.iloc[i]['swapped']:
+                features_df.at[i, 'sequential_order'] = i
+
         print("Predicted Reading Order:")
         print(features_df[['id', 'page_side', 'x_min', 'y_max', 'sequential_order']])
 
@@ -232,4 +254,4 @@ def batch_inference_rules(directory: str, overwrite: bool = False) -> None:
 
 if __name__ == '__main__':
 
-    batch_inference_rules('PATH/TO/DIR', True)
+    batch_inference_rules('dir/page', True)

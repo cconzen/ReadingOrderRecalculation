@@ -1,4 +1,4 @@
-# PageXML Reading Order Correction
+# PageXML Reading Order Recalculation
 
 This is a simple rule-based script for correcting the reading order of a PageXML file. It is meant to post process results of a layout recognition using Transkribus or Loghi.
 
@@ -33,19 +33,22 @@ pip install numpy pandas
 ```
 
 ## Usage
-### Batch Processing of XML Files
+
+### Batch Reading Order Recalculation of PageXML files
 
 The code is written to process all XML files located in a directory; To execute the script, install all dependencies first and then run following:
 ```
 python reorder.py example_folder/page --overwrite
-
 ```
 As arguments, specify the base directory containing the PageXML files (here example_folder/page), and add --overwrite if you wish to overwrite the existing file.
 
 ### Visualisation
 
-You can visualise the calculated reading order path by specifying your base directory in visualise.py and executing it:
-
+You can visualise the calculated reading order path by specifying your base directory and executing it:
+```
+python visualise.py example_folder
+```
+Here is a side by side of the input image, and the visualised result:
 
 <img src="https://github.com/cconzen/readingOrderCorrection/blob/main/example_folder/default.jpg" width="50%" height="50%"><img src="https://github.com/cconzen/readingOrderCorrection/blob/main/visualisation/default_vis.jpg" width="50%" height="50%">
 <img src="https://github.com/cconzen/readingOrderCorrection/blob/main/example_folder/default2.jpg" width="50%" height="50%"><img src="https://github.com/cconzen/readingOrderCorrection/blob/main/visualisation/default2_vis.jpg" width="50%" height="50%">

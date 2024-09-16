@@ -35,14 +35,13 @@ pip install numpy pandas
 ## Usage
 ### Batch Processing of XML Files
 
-The code is written to process all XML files located in a directory by calling batch_inference_rules().
-This applies inference rules to adjust the reading order and saves the updated XML files either by overwriting them or creating new ones.
+The code is written to process all XML files located in a directory; To execute the script, install all dependencies first and then run following:
+```
+python reorder.py example_folder/page --overwrite
 
 ```
-from reading_order import batch_inference_rules
+As arguments, specify the base directory containing the PageXML files (here example_folder/page), and add --overwrite if you wish to overwrite the existing file.
 
-batch_inference_rules('path/to/xml-directory', overwrite=True)
-```
 ### Visualisation
 
 You can visualise the calculated reading order path by specifying your base directory in visualise.py and executing it:

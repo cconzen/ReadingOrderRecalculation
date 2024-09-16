@@ -254,4 +254,4 @@ def batch_inference_rules(directory: str, overwrite: bool = False) -> None:
 
 if __name__ == '__main__':
 
-    batch_inference_rules('dir/page', True)
+    batch_inference_rules('example_folder/page', True)

@@ -254,4 +254,9 @@ def batch_inference_rules(directory: str, overwrite: bool = False) -> None:
 
 if __name__ == '__main__':
 
-    batch_inference_rules('example_folder/page', True)
+    parser = argparse.ArgumentParser(description='Process XML files to update reading order.')
+    parser.add_argument('directory', type=str, help='Path to the directory containing XML files.')
+    parser.add_argument('--overwrite', action='store_true', help='Whether to overwrite the original XML files.')
+    args = parser.parse_args()
+    
+    batch_inference_rules(args.directory, args.overwrite)

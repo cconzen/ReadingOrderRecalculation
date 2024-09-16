@@ -51,7 +51,7 @@ Here is a side by side of the input image, and the visualised result:
 
 <img src="https://github.com/cconzen/readingOrderCorrection/blob/main/example_folder/default.jpg" width="50%" height="50%"><img src="https://github.com/cconzen/readingOrderCorrection/blob/main/visualisation/default_vis.jpg" width="50%" height="50%">
 <img src="https://github.com/cconzen/readingOrderCorrection/blob/main/example_folder/default2.jpg" width="50%" height="50%"><img src="https://github.com/cconzen/readingOrderCorrection/blob/main/visualisation/default2_vis.jpg" width="50%" height="50%">
-<img src="https://github.com/cconzen/readingOrderCorrection/blob/main/example_folder/default3.jpg" width="50%" height="50%"><img src="https://github.com/cconzen/readingOrderCorrection/blob/main/visualisation/default3_vis.jpg" width="50%" height="50%">
+<img src="https://github.com/cconzen/readingOrderCorrection/blob/main/example_folder/default5.jpg" width="50%" height="50%"><img src="https://github.com/cconzen/readingOrderCorrection/blob/main/visualisation/default5_vis.jpg" width="50%" height="50%">
 
 # License
 This project is licensed under the MIT License - see the LICENSE file for details.

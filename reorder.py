@@ -160,11 +160,13 @@ def update_reading_order_in_xml(xml_file: str, updated_df: pd.DataFrame, overwri
             file.write(xml_str)
         print(f"PageXML with corrected reading order was saved as: {new_xml_file}")
 
+
 def batch_inference_rules(directory: str, overwrite: bool = False) -> None:
     """
     Processes all XML files in the given directory and updates their reading order based on 
-    comparison rules between adjacent regions. It only compares each region with its 
-    immediate following one on the same page side.
+    comparison rules between adjacent regions. It compares each region with its immediate 
+    following one on the same page side, and if a swap is necessary, the loop restarts until 
+    no swaps are needed.
 
     Args:
         directory (str): Path to the directory containing XML files.
@@ -189,68 +191,39 @@ def batch_inference_rules(directory: str, overwrite: bool = False) -> None:
             print(f"No text regions found in {xml_file}. Skipping...")
             continue
 
-        # sort regions by page side first, then top to bottom, and then left to right
+        # Sort regions by page side first, then top to bottom, and then left to right
         features_df = features_df.sort_values(by=['page_side', 'y_min', 'x_min']).reset_index(drop=True)
 
-        # initialise sequential order starting with 0
-        features_df['sequential_order'] = 0
-        features_df['swapped'] = False
-        # iterate over regions and compare each box with its immediate following one
-        for i in range(len(features_df) - 1):
-            current_box = features_df.iloc[i]
-            next_box = features_df.iloc[i + 1]
+        # initialise sequential order based on the current index in DataFrame
+        features_df['sequential_order'] = list(range(len(features_df)))
+        
+        swapped = True  # initial state to start the loop
+        
+        while swapped:
+            swapped = False  # reset at the start of each pass, while loop will break if it isn't set to True at some point during the iteration
 
-            if current_box['swapped'] or next_box['swapped']:
-                continue
+            for i in range(len(features_df) - 1):
+                current_box = features_df.iloc[i]
+                next_box = features_df.iloc[i + 1]
 
-            # all boxes on the right side
-            if current_box['page_side'] == next_box['page_side'] == 0:
-                if next_box['y_max'] <= current_box['y_max'] and next_box['y_min'] >= current_box['y_min']:
-                    if next_box['x_min'] > current_box['x_min'] or next_box['x_max'] < current_box['x_max']:
-                        # swap order of the boxes
-                        features_df.at[i, 'sequential_order'] = i + 1
-                        features_df.at[i + 1, 'sequential_order'] = i
-                        features_df.at[i, 'swapped'] = True
-                        features_df.at[i + 1, 'swapped'] = True
-                    else:
-                        # keep as is
-                        features_df.at[i, 'sequential_order'] = i
-                        features_df.at[i + 1, 'sequential_order'] = i + 1
-                else:
-                    # keep as is
-                    features_df.at[i, 'sequential_order'] = i
-                    features_df.at[i + 1, 'sequential_order'] = i + 1
+                # only compare boxes on the same page side
+                if current_box['page_side'] == next_box['page_side']:
+                    if next_box['y_max'] <= current_box['y_max'] and next_box['y_min'] >= current_box['y_min']:
+                        if next_box['x_min'] > current_box['x_min'] or next_box['x_max'] < current_box['x_max']:
+                            # swap ranks
+                            features_df.iloc[i], features_df.iloc[i + 1] = features_df.iloc[i + 1], features_df.iloc[i]
+                            swapped = True
+                            print(f"Swapped: {i} with {i+1}")
 
-            # all boxes on the left side
-            elif current_box['page_side'] == next_box['page_side'] == 1:
-                if next_box['y_max'] <= current_box['y_max'] and next_box['y_min'] >= current_box['y_min']:
-                    if next_box['x_min'] > current_box['x_min'] or next_box['x_max'] < current_box['x_max']:
-                        # swap order of the boxes
-                        features_df.at[i, 'sequential_order'] = i + 1
-                        features_df.at[i + 1, 'sequential_order'] = i
-                        features_df.at[i, 'swapped'] = True
-                        features_df.at[i + 1, 'swapped'] = True
-                    else:
-                        # Keep as is
-                        features_df.at[i, 'sequential_order'] = i
-                        features_df.at[i + 1, 'sequential_order'] = i + 1
-                else:
-                    # keep as is
-                    features_df.at[i, 'sequential_order'] = i
-                    features_df.at[i + 1, 'sequential_order'] = i + 1
-            else:
-                features_df.at[i, 'sequential_order'] = i
-                features_df.at[i + 1, 'sequential_order'] = i + 1
+                            break
 
-        for i in range(len(features_df)):
-            if not features_df.iloc[i]['swapped']:
-                features_df.at[i, 'sequential_order'] = i
+        # update with final order
+        features_df['sequential_order'] = range(len(features_df))
 
-        print("Predicted Reading Order:")
+        print("Final Reading Order:")
         print(features_df[['id', 'page_side', 'x_min', 'y_max', 'sequential_order']])
 
         update_reading_order_in_xml(xml_path, features_df, overwrite)
-
 
 if __name__ == '__main__':
 

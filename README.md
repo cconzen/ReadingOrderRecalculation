@@ -1,6 +1,6 @@
 # PageXML Reading Order Recalculation
 
-This is a simple rule-based script for correcting the reading order of a PageXML file. It is meant to post process results of a layout recognition using Transkribus or Loghi.
+This is a simple rule-based script for recalculating the region reading order of a PageXML file. It is meant to post-process results of a layout recognition using [Transkribus](https://www.transkribus.org/) or [Loghi](https://github.com/knaw-huc/loghi). More specifically, it is modelled to correctly order one or two page scans which contain marginalia.
 
 ## What It Does
 
@@ -47,7 +47,9 @@ You can visualise the calculated reading order path by specifying your base dire
 ```
 python visualise.py example_folder
 ```
-Here is a side by side of the input image, and the visualised result:
+Here are some side-by-side comparisons of input image and visualised result: 
+
+(these can be found in the [example_folder](https://github.com/cconzen/ReadingOrderRecalculation/tree/main/example_folder); The scans were processed using [Loghi](https://github.com/knaw-huc/loghi).
 
 <img src="https://github.com/cconzen/readingOrderCorrection/blob/main/example_folder/default.jpg" width="50%" height="50%"><img src="https://github.com/cconzen/readingOrderCorrection/blob/main/visualisation/default_vis.jpg" width="50%" height="50%">
 <img src="https://github.com/cconzen/readingOrderCorrection/blob/main/example_folder/default2.jpg" width="50%" height="50%"><img src="https://github.com/cconzen/readingOrderCorrection/blob/main/visualisation/default2_vis.jpg" width="50%" height="50%">

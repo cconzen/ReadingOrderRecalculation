@@ -19,10 +19,7 @@ def extract_features_from_xml(xml_file: str) -> pd.DataFrame:
             * 'id': Region ID
             * 'x_min', 'y_min': Minimum x and y coordinates
             * 'x_max', 'y_max': Maximum x and y coordinates
-            * 'width', 'height': Width and height of the region
             * 'page_side': position of the region; left (0) or right (1) page
-            * 'aspect_ratio': Aspect ratio of the region
-            * 'structure_type': Structure type of the region
             * 'index': Reading order index
     """
 
@@ -36,60 +33,34 @@ def extract_features_from_xml(xml_file: str) -> pd.DataFrame:
 
     bookfold_centre = page_width / 2 if page_width > page_height else 0
 
-    regions = []
-
-    reading_order = {}
-    ordered_group = root.find('.//ns:ReadingOrder/ns:OrderedGroup', ns)
-    if ordered_group:
-        for region_ref in ordered_group.findall('ns:RegionRefIndexed', ns):
-            region_id = region_ref.attrib['regionRef']
-            index = int(region_ref.attrib['index'])
-            reading_order[region_id] = index
-
-        text_regions = root.findall('.//ns:TextRegion', ns)
-        if not text_regions:
-            return None
-
-        for region in text_regions:
-            region_id = region.attrib['id']
-            coords = region.find('ns:Coords', ns).attrib['points']
-            custom_str = region.attrib.get('custom', '')
-
-            match = re.search(r'structure\s*{[^}]*type:([^;]+);', custom_str)
-            structure_type = match.group(1) if match else "Unknown"
-
-            points = [list(map(int, point.split(','))) for point in coords.split()]
-            x_min = min(p[0] for p in points)
-            y_min = min(p[1] for p in points)
-            x_max = max(p[0] for p in points)
-            y_max = max(p[1] for p in points)
-
-            width = x_max - x_min
-            height = y_max - y_min
-            aspect_ratio = width / height
-
-            avg_x = np.mean([point[0] for point in points])
-            page_side = 0 if avg_x < bookfold_centre else 1  
-
-            index = reading_order.get(region_id, -1)  # default to -1 if not found
-
-            regions.append({
-                'id': region_id,
-                'x_min': x_min, # left most coordinate
-                'x_max': x_max, # right most coordinate
-                'y_min': y_min, # highest coordinate
-                'y_max': y_max, # lowest coordinate
-                'width': width,
-                'height': height,
-                'page_side': page_side, # 0 = left side, 1 = right side
-                'aspect_ratio': aspect_ratio,
-                'structure_type': structure_type,
-                'index': index # initial reading order index
-            })
-
-        return pd.DataFrame(regions)
-    else:
+    text_regions = root.findall('.//ns:TextRegion', ns)
+    if not text_regions:
         return None
+    regions = []
+    for region in text_regions:
+        region_id = region.attrib['id']
+        coords = region.find('ns:Coords', ns).attrib['points']
+        custom_str = region.attrib.get('custom', '')
+        points = [list(map(int, point.split(','))) for point in coords.split()]
+        x_min = min(p[0] for p in points)
+        y_min = min(p[1] for p in points)
+        x_max = max(p[0] for p in points)
+        y_max = max(p[1] for p in points)
+
+        avg_x = np.mean([point[0] for point in points])
+        page_side = 0 if avg_x < bookfold_centre else 1  
+
+        regions.append({
+            'id': region_id,
+            'x_min': x_min, # left most coordinate
+            'x_max': x_max, # right most coordinate
+            'y_min': y_min, # highest coordinate
+            'y_max': y_max, # lowest coordinate
+            'page_side': page_side, # 0 = left side, 1 = right side
+        })
+
+    return pd.DataFrame(regions)
+
 
 def update_reading_order_in_xml(xml_file: str, updated_df: pd.DataFrame, overwrite: bool) -> None:
     """

@@ -55,9 +55,9 @@ def draw(image_path: str, regions: List[Tuple[int, int, int, int, int]], output_
     left_transparent = (200, 150, 255, 80) # light purple
     right_transparent = (152, 255, 152, 80) # light green
 
-    bookfold_x = image.width // 2
-    overlay_draw.rectangle([0, 0, bookfold_x, image.height], fill=left_transparent)
-    overlay_draw.rectangle([bookfold_x, 0, image.width, image.height], fill=right_transparent)
+    bookfold_centre = image.width // 2 if image.width > image.height else 0
+    overlay_draw.rectangle([0, 0, bookfold_centre, image.height], fill=left_transparent)
+    overlay_draw.rectangle([bookfold_centre, 0, image.width, image.height], fill=right_transparent)
 
 
     image = Image.alpha_composite(image, overlay) # combines image with page seperation overlay

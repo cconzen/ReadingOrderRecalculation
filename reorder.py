@@ -179,7 +179,7 @@ def batch_inference_rules(directory: str, overwrite: bool = False) -> None:
 
                 # only compare boxes on the same page side
                 if current_box['page_side'] == next_box['page_side']:
-                    if next_box['y_max'] <= current_box['y_max'] and next_box['y_min'] >= current_box['y_min']:
+                    if next_box['y_max'] <= current_box['y_max'] and next_box['y_min'] > current_box['y_min']:
                         if next_box['x_min'] > current_box['x_min'] or next_box['x_max'] < current_box['x_max']:
                             # swap ranks
                             features_df.iloc[i], features_df.iloc[i + 1] = features_df.iloc[i + 1], features_df.iloc[i]

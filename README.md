@@ -1,6 +1,8 @@
 # PageXML Reading Order Recalculation
 
-This is a simple rule-based script for recalculating the region reading order of a PageXML file. It is meant to post-process results of a layout recognition using [Transkribus](https://www.transkribus.org/) or [Loghi](https://github.com/knaw-huc/loghi). More specifically, it is modelled to correctly order one or two page scans which contain marginalia.
+This is a simple rule-based script for recalculating the region reading order of a PageXML file. It is meant to post-process results of a layout recognition using [Transkribus](https://www.transkribus.org/) or [Loghi](https://github.com/knaw-huc/loghi). More specifically, it is modelled to correctly order one or two page scans which contain marginalia. 
+
+This script was developed for [Het Utrechts Archief](https://hetutrechtsarchief.nl/) within the context of an internship.
 
 ## What It Does
 

@@ -146,7 +146,10 @@ def batch_inference_rules(directory: str, overwrite: bool = False) -> None:
     Returns:
         None
     """
-    
+    def swap_ranks(df, i):
+        df.iloc[i], df.iloc[i + 1] = df.iloc[i + 1], df.iloc[i]
+        print(f"Swapped: {i} with {i+1}")
+        return df
     xml_files = [f for f in os.listdir(directory) if f.endswith('xml')]
 
     if not xml_files:
@@ -162,7 +165,7 @@ def batch_inference_rules(directory: str, overwrite: bool = False) -> None:
             print(f"No text regions found in {xml_file}. Skipping...")
             continue
 
-        # Sort regions by page side first, then top to bottom, and then left to right
+        # sort regions by page side first, then top to bottom, and then left to right
         features_df = features_df.sort_values(by=['page_side', 'y_min', 'x_min']).reset_index(drop=True)
 
         # initialise sequential order based on the current index in DataFrame
@@ -174,19 +177,21 @@ def batch_inference_rules(directory: str, overwrite: bool = False) -> None:
             swapped = False  # reset at the start of each pass, while loop will break if it isn't set to True at some point during the iteration
 
             for i in range(len(features_df) - 1):
+
                 current_box = features_df.iloc[i]
                 next_box = features_df.iloc[i + 1]
 
-                # only compare boxes on the same page side
-                if current_box['page_side'] == next_box['page_side']:
-                    if next_box['y_max'] <= current_box['y_max'] and next_box['y_min'] > current_box['y_min']:
-                        if next_box['x_min'] > current_box['x_min'] or next_box['x_max'] < current_box['x_max']:
-                            # swap ranks
-                            features_df.iloc[i], features_df.iloc[i + 1] = features_df.iloc[i + 1], features_df.iloc[i]
-                            swapped = True
-                            print(f"Swapped: {i} with {i+1}")
+                both_on_same_page_side = current_box['page_side'] == next_box['page_side']
+                next_box_vertically_contained_within_current_box = next_box['y_max'] <= current_box['y_max'] and next_box['y_min'] > current_box['y_min']
+                next_box_to_the_left_of_current_box = next_box['x_min'] > current_box['x_min']
+                next_box_to_the_right_of_current_box = next_box['x_max'] < current_box['x_max']
 
-                            break
+                if both_on_same_page_side and next_box_vertically_contained_within_current_box and (next_box_to_the_left_of_current_box or next_box_to_the_right_of_current_box):
+
+                    features_df = swap_ranks(features_df, i)
+
+                    swapped = True
+                    break
 
         # update with final order
         features_df['sequential_order'] = range(len(features_df))

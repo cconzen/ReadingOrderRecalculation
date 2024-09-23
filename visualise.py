@@ -5,6 +5,8 @@ import xml.etree.ElementTree as ET
 from PIL import Image, ImageDraw, ImageFont
 import argparse 
 
+import platform
+
 def parse_points(points_str: str) -> Tuple[int, int, int, int]:
     """Parse the points from the 'Coords' element and return x_min, x_max, y_min, y_max."""
     points = re.findall(r'\d+,\d+', points_str)
@@ -62,7 +64,13 @@ def draw(image_path: str, regions: List[Tuple[int, int, int, int, int]], output_
 
     image = Image.alpha_composite(image, overlay) # combines image with page seperation overlay
     
-    font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" # linux standard font, adjust for other OS
+    if platform.system() == "Linux":
+        font_path = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+    elif platform.system() == "Windows":
+        font_path = "C:/Windows/Fonts/Arial.ttf"
+    else:
+        raise Exception("Unsupported OS system, you need to specify what font to use manually in the script.")
+    
     font_size = 50 
     font = ImageFont.truetype(font_path, font_size)
 

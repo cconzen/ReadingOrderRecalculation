@@ -6,25 +6,10 @@ This script was developed for [Het Utrechts Archief](https://hetutrechtsarchief.
 
 ## What It Does
 
-- **Extract Features**: Parses XML files to extract text regions, including coordinates, aspect ratios, structure types, and initial reading order indices.
-- **Update Reading Order**: Adjusts the reading order of text regions based on their position and geometry.
-- **Update Files**: Saves the new reading order into the XMLs.
-
-## How It Works
-
-The script is using simple logic based on the geometric properties of the regions and page.
-
-1. Check aspect ratio. If the width of the page is bigger than the height, a bookfold is approximated by deviding the width by 2. If not, the bookfold is set to 0 for a single page layout.
-2. Assign all regions that have their centre left of the bookfold 0 for the left page, all right of the bookfold 1 for the right page.
-3. Order the regions by their page side first (left before right), then for each side top to bottom and left to right
-4. iterate over all regions following the current reading order and compare each box with its immediate following one UNTIL not one swap occurs:
-     - if the two consecutive boxes are both on the same page:
-        - if box 2's lowest coordinate is higher than that of box 1, and its highest lower than that of box 1:
-          - swap their ranks if box 2 (x_min) is left of box 1 (x_min) OR box 2 (x_max) is right of box 1 (x_max), update current reading order and restart loop
-     - keep their initial reading order rank if otherwise
-
-5. Once a loop runs through with no swaps, the script takes the final reading order and updates the reading order attributes within the XML structure, reflecting the new reading order. You can choose if you wish to overwrite the prior xml file, or save it as a new one.
-
+- **Extract Features**: Parses XML files to extract image information (height, width) as well as text regions and their coordinates.
+- **Calculate Reading Order**: Uses extracted features to calculate the region reading order.
+- **Update Files**: Saves the new reading order into the PageXMLs.
+  
 ## Requirements
 
 You only need numpy and pandas in addition to some standard Python libraries. You can install the required dependencies using pip:
@@ -42,6 +27,44 @@ The code is written to process all XML files located in a directory; To execute 
 python reorder.py example_folder/page --overwrite
 ```
 As arguments, specify the base directory containing the PageXML files (here example_folder/page), and add --overwrite if you wish to overwrite the existing file.
+
+## How It Works
+
+The script is using simple logic based on the geometric properties of the regions and page.
+
+Given this sample layout of a scan:
+
+<img src="https://github.com/cconzen/readingOrderCorrection/blob/main/explanation_svgs/start.svg" width="100%">
+
+1. Determine orientation (landscape = two pages, portrait = one page) based on the image’s height and width. Depending on the orientation, the bookfold location is estimated:
+   - at the horizontal centre of the scan for landscape orientation
+   - at the left edge (x = 0) for portrait orientation
+
+<img src="https://github.com/cconzen/readingOrderCorrection/blob/main/explanation_svgs/page_side.svg" width="100%">
+
+2. The regions are assigned either 0 for left page or 1 for right page based on where their own horizontal centre is located.
+3. The regions are ordered:
+    - Left page to right page
+        - Top to bottom
+            - Left to right
+
+<img src="https://github.com/cconzen/readingOrderCorrection/blob/main/explanation_svgs/firstorder.svg" width="100%">
+
+4. The script then uses this initial order to iterate through all regions, comparing every current box with its immediate following one in the ranking. It checks whether the following box might be a marginalium by inspecting if they are located on the same page, and then if the candidate is vertically contained within the current box:
+
+<img src="https://github.com/cconzen/readingOrderCorrection/blob/main/explanation_svgs/verticallywithin.svg" width="100%">
+
+5. It is then confirmed that it is located to the left or right of the current box (In this case, it is considered to be left of it; it’s comparing the left edge for the left condition (and vice versa) so overlapping boxes are handled correctly):
+
+<img src="https://github.com/cconzen/readingOrderCorrection/blob/main/explanation_svgs/leftcheck.svg" width="100%">
+
+6. If all these conditions apply, their ranks/indices are swapped:
+
+<img src="https://github.com/cconzen/readingOrderCorrection/blob/main/explanation_svgs/swapranks.svg" width="100%">
+
+7. If a swap occurs, the loop breaks and restarts with the new order. This gets repeated until no more swaps occur in a full loop; the final reading order has been reached:
+
+<img src="https://github.com/cconzen/readingOrderCorrection/blob/main/explanation_svgs/finalorder.svg" width="100%">
 
 ### Visualisation
 

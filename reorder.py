@@ -107,9 +107,18 @@ def update_reading_order_in_xml(xml_file: str, updated_df: pd.DataFrame, overwri
         text_region = root.find(f".//TextRegion[@id='{region_ref}']")
         if text_region is not None:
             custom_attrib = text_region.attrib.get('custom', '')
-            new_custom_attrib = re.sub(r'readingOrder {index:\d+;}',
-                                       f'readingOrder {{index:{sequential_order};}}',
-                                       custom_attrib)
+            
+            reading_order_exists = re.search(r'readingOrder {index:\d+;}', custom_attrib)
+            if reading_order_exists:
+                new_custom_attrib = re.sub(r'readingOrder {index:\d+;}', 
+                                            f'readingOrder {{index:{sequential_order};}}', 
+                                            custom_attrib)
+            else:
+                if custom_attrib:
+                    new_custom_attrib = f"{custom_attrib} readingOrder {{index:{sequential_order};}}"
+                else:
+                    new_custom_attrib = f"readingOrder {{index:{sequential_order};}}"
+            
             text_region.set('custom', new_custom_attrib)
 
     xml_bytes = ET.tostring(root, encoding='UTF-8', method='xml', xml_declaration=True)
